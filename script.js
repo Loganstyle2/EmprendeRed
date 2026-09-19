@@ -1,4 +1,4 @@
-// Configuración de Firebase 
+// Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCNhgB65MZCm7kWPxRaZvCoSGYKwfyfCeM",
   authDomain: "emprendered-90348.firebaseapp.com",
@@ -10,15 +10,16 @@ const firebaseConfig = {
 };
 
 // Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
 }
+
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 // Estado Global de la Aplicación
 let currentUser = null;
-let currentTab = localStorage.getItem('emprende_current_tab') || 'feed'; 
+let currentTab = localStorage.getItem('emprende_current_tab') || 'feed';
 let isAuthRegisterMode = false;
 let selectedRatingStars = 0;
 let tempImageBase64 = null;
