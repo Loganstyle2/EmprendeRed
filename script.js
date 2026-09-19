@@ -1,16 +1,17 @@
-// Configuración de Firebase (Reemplaza con tus claves de Firebase Console)
+// Configuración de Firebase 
 const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "TU_PROJECT_ID.firebaseapp.com",
-    projectId: "TU_PROJECT_ID",
-    storageBucket: "TU_PROJECT_ID.appspot.com",
-    messagingSenderId: "TU_SENDER_ID",
-    appId: "TU_APP_ID"
+  apiKey: "AIzaSyCNhgB65MZCm7kWPxRaZvCoSGYKwfyfCeM",
+  authDomain: "emprendered-90348.firebaseapp.com",
+  projectId: "emprendered-90348",
+  storageBucket: "emprendered-90348.firebasestorage.app",
+  messagingSenderId: "626521746909",
+  appId: "1:626521746909:web:61baeaa8814ad258d85a34",
+  measurementId: "G-Q4ZPC8BC00"
 };
 
 // Inicializar Firebase
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 }
 const auth = firebase.auth();
 const db = firebase.firestore();
