@@ -1,3 +1,20 @@
+// Configuración de Firebase (Reemplaza con tus claves de Firebase Console)
+const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_PROJECT_ID.firebaseapp.com",
+    projectId: "TU_PROJECT_ID",
+    storageBucket: "TU_PROJECT_ID.appspot.com",
+    messagingSenderId: "TU_SENDER_ID",
+    appId: "TU_APP_ID"
+};
+
+// Inicializar Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 // Estado Global de la Aplicación
 let currentUser = null;
 let currentTab = localStorage.getItem('emprende_current_tab') || 'feed'; 
@@ -7,44 +24,53 @@ let tempImageBase64 = null;
 let tempAvatarBase64 = null;
 let tempPostImageBase64 = null;
 
-// Base de Datos Local (localStorage)
-let users = JSON.parse(localStorage.getItem('emprende_users')) || [];
-let posts = JSON.parse(localStorage.getItem('emprende_posts')) || [
-    {
-        id: 1,
-        authorId: 0,
-        author: "Carlos Mendoza",
-        authorProfession: "Comercio Local",
-        authorAvatar: "C",
-        avatarBg: "#8b5cf6",
-        time: "Hace 2h",
-        type: "Duda",
-        content: "¿Alguien conoce un buen sistema POS para registrar inventario y ventas desde tablet en pequeños negocios?",
-        likes: 12,
-        comments: 1,
-        commentsList: [
-            { id: 101, author: "Ana Gómez", content: "¡Hola! Yo utilizo Square y me funciona súper bien.", time: "Hace 1h" }
-        ]
-    }
-];
-let portfolioItems = JSON.parse(localStorage.getItem('emprende_portfolio')) || [];
+// Arreglos Locales
+let users = [];
+let posts = [];
+let portfolioItems = [];
 
-// --- INICIALIZACIÓN AUTOMÁTICA AL CARGAR/ACTUALIZAR ---
+// --- INICIALIZACIÓN AUTOMÁTICA Y ESCUCHADOR DE AUTENTICACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
-    checkActiveSession();
+    // Escuchar cambios de estado en Firebase Auth
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            // Usuario autenticado en Firebase
+            try {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    currentUser = { id: user.uid, ...userDoc.data() };
+                } else {
+                    currentUser = {
+                        id: user.uid,
+                        name: user.displayName || "Usuario",
+                        email: user.email,
+                        profession: "Emprendedor",
+                        trade: "General",
+                        experience: 0,
+                        location: "No especificada",
+                        bio: "¡Hola! Estoy usando EmprendeRed.",
+                        avatar: (user.displayName || "U").charAt(0).toUpperCase(),
+                        avatarBg: "#2563eb",
+                        avatarImage: null,
+                        ratings: [],
+                        score: "0.0"
+                    };
+                }
+                localStorage.setItem('emprende_session', JSON.stringify(currentUser));
+                showApp();
+            } catch (error) {
+                console.error("Error al obtener perfil del usuario:", error);
+            }
+        } else {
+            // No hay usuario activo
+            currentUser = null;
+            localStorage.removeItem('emprende_session');
+            showLobby();
+        }
+    });
 });
 
 // --- AUTENTICACIÓN Y SESIÓN ---
-
-function checkActiveSession() {
-    const sessionUser = JSON.parse(localStorage.getItem('emprende_session'));
-    if (sessionUser) {
-        currentUser = sessionUser;
-        showApp();
-    } else {
-        showLobby();
-    }
-}
 
 function showLobby() {
     const lobbyView = document.getElementById('lobbyView');
@@ -109,7 +135,7 @@ function toggleAuthMode() {
     openAuthModal(isAuthRegisterMode ? 'login' : 'register');
 }
 
-function handleAuthSubmit(e) {
+async function handleAuthSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
     
     const emailEl = document.getElementById('authEmail');
@@ -120,51 +146,61 @@ function handleAuthSubmit(e) {
     const email = emailEl.value.trim();
     const password = passEl.value.trim();
 
-    if (isAuthRegisterMode) {
-        const nameEl = document.getElementById('authName');
-        const name = nameEl ? nameEl.value.trim() : '';
-        if (!name) return alert("Por favor ingresa tu nombre.");
-        
-        const existing = users.find(u => u.email === email);
-        if (existing) return alert("El correo ya está registrado.");
+    try {
+        if (isAuthRegisterMode) {
+            const nameEl = document.getElementById('authName');
+            const name = nameEl ? nameEl.value.trim() : '';
+            if (!name) return alert("Por favor ingresa tu nombre.");
 
-        const newUser = {
-            id: Date.now(),
-            name: name,
-            email: email,
-            password: password,
-            profession: "Emprendedor",
-            trade: "General",
-            experience: 0,
-            location: "No especificada",
-            bio: "¡Hola! Estoy usando EmprendeRed.",
-            avatar: name.charAt(0).toUpperCase(),
-            avatarBg: "#2563eb",
-            avatarImage: null,
-            ratings: [],
-            score: "0.0"
-        };
+            // Crear usuario en Firebase Auth
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user;
 
-        users.push(newUser);
-        localStorage.setItem('emprende_users', JSON.stringify(users));
-        currentUser = newUser;
-    } else {
-        const user = users.find(u => u.email === email && u.password === password);
-        if (!user) return alert("Credenciales incorrectas.");
-        currentUser = user;
+            const userData = {
+                id: user.uid,
+                name: name,
+                email: email,
+                profession: "Emprendedor",
+                trade: "General",
+                experience: 0,
+                location: "No especificada",
+                bio: "¡Hola! Estoy usando EmprendeRed.",
+                avatar: name.charAt(0).toUpperCase(),
+                avatarBg: "#2563eb",
+                avatarImage: null,
+                ratings: [],
+                score: "0.0",
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            // Guardar datos en Firestore
+            await db.collection('users').doc(user.uid).set(userData);
+            currentUser = userData;
+        } else {
+            // Iniciar sesión con Firebase Auth
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
+            if (userDoc.exists) {
+                currentUser = { id: userCredential.user.uid, ...userDoc.data() };
+            }
+        }
+
+        closeAuthModal();
+    } catch (error) {
+        alert("Error en la autenticación: " + error.message);
     }
-
-    localStorage.setItem('emprende_session', JSON.stringify(currentUser));
-    closeAuthModal();
-    showApp();
 }
 
 function logout() {
-    localStorage.removeItem('emprende_session');
-    localStorage.removeItem('emprende_current_tab');
-    currentUser = null;
-    currentTab = 'feed';
-    showLobby();
+    auth.signOut().then(() => {
+        localStorage.removeItem('emprende_session');
+        localStorage.removeItem('emprende_current_tab');
+        currentUser = null;
+        currentTab = 'feed';
+        showLobby();
+    }).catch(error => {
+        console.error("Error al cerrar sesión:", error);
+    });
 }
 
 // --- NAVEGACIÓN Y VISTAS ---
@@ -187,7 +223,7 @@ function switchTab(tab) {
         if (profileDetailsCard) profileDetailsCard.classList.add('hidden');
         if (navHome) navHome.classList.add('active');
         if (navProfile) navProfile.classList.remove('active');
-        renderPosts();
+        fetchPosts();
     } else if (tab === 'profile') {
         if (feedView) feedView.classList.add('hidden');
         if (profileView) profileView.classList.remove('hidden');
@@ -196,7 +232,7 @@ function switchTab(tab) {
         if (navHome) navHome.classList.remove('active');
         if (navProfile) navProfile.classList.add('active');
         renderProfile();
-        renderPortfolio();
+        fetchPortfolio();
     }
 }
 
@@ -324,7 +360,7 @@ function toggleEditForm() {
     }
 }
 
-function saveProfile() {
+async function saveProfile() {
     const nameVal = document.getElementById('editNameInput')?.value.trim();
     const profVal = document.getElementById('editProfessionInput')?.value.trim();
     const tradeVal = document.getElementById('editTradeInput')?.value.trim();
@@ -343,18 +379,19 @@ function saveProfile() {
         currentUser.avatarImage = tempAvatarBase64;
     }
 
-    syncUserData();
+    await syncUserData();
     toggleEditForm();
     updateUserUI();
 }
 
-function syncUserData() {
-    const index = users.findIndex(u => u.id === currentUser.id);
-    if (index !== -1) {
-        users[index] = currentUser;
-        localStorage.setItem('emprende_users', JSON.stringify(users));
+async function syncUserData() {
+    if (!currentUser || !currentUser.id) return;
+    try {
+        await db.collection('users').doc(currentUser.id).update(currentUser);
+        localStorage.setItem('emprende_session', JSON.stringify(currentUser));
+    } catch (error) {
+        console.error("Error al actualizar usuario en Firestore:", error);
     }
-    localStorage.setItem('emprende_session', JSON.stringify(currentUser));
 }
 
 function renderProfile() {
@@ -394,7 +431,7 @@ function removePostImagePreview() {
 
 // --- PUBLICACIÓN EN FEED Y PORTAFOLIO ---
 
-function addPost() {
+async function addPost() {
     const postInput = document.getElementById('postInput');
     const postType = document.getElementById('postType');
     
@@ -406,29 +443,43 @@ function addPost() {
     if (!text && !tempPostImageBase64) return alert("Escribe un mensaje o sube una imagen para publicar.");
 
     const newPost = {
-        id: Date.now(),
         authorId: currentUser.id,
         author: currentUser.name,
         authorProfession: currentUser.profession || "Emprendedor",
-        authorAvatar: currentUser.avatar,
-        avatarBg: currentUser.avatarBg,
-        avatarImage: currentUser.avatarImage,
+        authorAvatar: currentUser.avatar || currentUser.name.charAt(0),
+        avatarBg: currentUser.avatarBg || "#2563eb",
+        avatarImage: currentUser.avatarImage || null,
         time: "Hace un momento",
         type: type,
         content: text,
-        image: tempPostImageBase64,
+        image: tempPostImageBase64 || null,
         likes: 0,
-        likesList: [], // <--- Guardará los IDs de los usuarios que dieron like
+        likesList: [],
         comments: 0,
-        commentsList: []
+        commentsList: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    posts.unshift(newPost);
-    localStorage.setItem('emprende_posts', JSON.stringify(posts));
-    
-    postInput.value = '';
-    removePostImagePreview();
-    renderPosts();
+    try {
+        await db.collection('posts').add(newPost);
+        postInput.value = '';
+        removePostImagePreview();
+        fetchPosts();
+    } catch (error) {
+        alert("Error al publicar: " + error.message);
+    }
+}
+
+function fetchPosts() {
+    db.collection('posts').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+        posts = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        renderPosts();
+    }, (error) => {
+        console.error("Error al obtener publicaciones:", error);
+    });
 }
 
 function renderPosts() {
@@ -458,14 +509,14 @@ function renderPosts() {
                     </div>
                     <div class="post-user-info">
                         <h4>${post.author}</h4>
-                        <span>${post.authorProfession} • ${post.time}</span>
+                        <span>${post.authorProfession} • ${post.time || 'Reciente'}</span>
                     </div>
                     <span class="post-tag ${tagClass}">${post.type}</span>
                     
                     ${isOwner ? `
                         <div style="margin-left: auto; display: flex; gap: 8px;">
-                            <button onclick="editPost(${post.id})" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 0.8rem;">Editar</button>
-                            <button onclick="deletePost(${post.id})" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 0.8rem;">Eliminar</button>
+                            <button onclick="editPost('${post.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 0.8rem;">Editar</button>
+                            <button onclick="deletePost('${post.id}')" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 0.8rem;">Eliminar</button>
                         </div>
                     ` : ''}
                 </div>
@@ -473,10 +524,10 @@ function renderPosts() {
                 ${post.image ? `<div style="margin-top: 0.5rem; border-radius: 8px; overflow: hidden;"><img src="${post.image}" alt="Imagen de publicación" style="width: 100%; max-height: 400px; object-fit: cover;"></div>` : ''}
                 
                 <div class="post-footer" style="margin-top: 0.8rem; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 0.5rem; display: flex; gap: 15px;">
-                    <div class="interaction-btn ${userLiked ? 'active-like' : ''}" onclick="likePost(${post.id})" style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: ${userLiked ? 'var(--accent, #2563eb)' : 'inherit'}; font-weight: ${userLiked ? '600' : 'normal'};">
+                    <div class="interaction-btn ${userLiked ? 'active-like' : ''}" onclick="likePost('${post.id}')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: ${userLiked ? 'var(--accent, #2563eb)' : 'inherit'}; font-weight: ${userLiked ? '600' : 'normal'};">
                         <i data-lucide="thumbs-up" size="16"></i> ${post.likesList ? post.likesList.length : (post.likes || 0)}
                     </div>
-                    <div class="interaction-btn" onclick="toggleComments(${post.id})" style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                    <div class="interaction-btn" onclick="toggleComments('${post.id}')" style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
                         <i data-lucide="message-square" size="16"></i> ${post.comments || comments.length}
                     </div>
                 </div>
@@ -492,7 +543,7 @@ function renderPosts() {
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <input type="text" id="comment-input-${post.id}" placeholder="Escribe un comentario..." style="flex: 1; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem;">
-                        <button onclick="addComment(${post.id})" style="padding: 0.4rem 0.8rem; background-color: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Enviar</button>
+                        <button onclick="addComment('${post.id}')" style="padding: 0.4rem 0.8rem; background-color: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Enviar</button>
                     </div>
                 </div>
             </div>
@@ -506,23 +557,29 @@ function renderPosts() {
 
 // --- EDICIÓN Y ELIMINACIÓN DE PUBLICACIONES ---
 
-function deletePost(id) {
+async function deletePost(id) {
     if (confirm("¿Estás seguro de que deseas eliminar esta publicación?")) {
-        posts = posts.filter(p => p.id !== id);
-        localStorage.setItem('emprende_posts', JSON.stringify(posts));
-        renderPosts();
+        try {
+            await db.collection('posts').doc(id).delete();
+        } catch (error) {
+            alert("Error al eliminar la publicación: " + error.message);
+        }
     }
 }
 
-function editPost(id) {
+async function editPost(id) {
     const post = posts.find(p => p.id === id);
     if (!post) return;
 
     const newText = prompt("Edita tu publicación:", post.content);
     if (newText !== null && newText.trim() !== "") {
-        post.content = newText.trim();
-        localStorage.setItem('emprende_posts', JSON.stringify(posts));
-        renderPosts();
+        try {
+            await db.collection('posts').doc(id).update({
+                content: newText.trim()
+            });
+        } catch (error) {
+            alert("Error al actualizar publicación: " + error.message);
+        }
     }
 }
 
@@ -535,7 +592,7 @@ function toggleComments(postId) {
     }
 }
 
-function addComment(postId) {
+async function addComment(postId) {
     const input = document.getElementById(`comment-input-${postId}`);
     if (!input) return;
 
@@ -544,46 +601,49 @@ function addComment(postId) {
 
     const post = posts.find(p => p.id === postId);
     if (post) {
-        if (!post.commentsList) post.commentsList = [];
-        
-        post.commentsList.push({
+        const commentsList = post.commentsList || [];
+        commentsList.push({
             id: Date.now(),
             author: currentUser ? currentUser.name : "Usuario",
             content: text,
             time: "Hace un momento"
         });
 
-        post.comments = post.commentsList.length;
-        localStorage.setItem('emprende_posts', JSON.stringify(posts));
-        renderPosts();
+        try {
+            await db.collection('posts').doc(postId).update({
+                commentsList: commentsList,
+                comments: commentsList.length
+            });
+            input.value = '';
+        } catch (error) {
+            alert("Error al añadir comentario: " + error.message);
+        }
     }
 }
 
-function likePost(id) {
+async function likePost(id) {
     if (!currentUser) return alert("Debes iniciar sesión para dar me gusta.");
 
     const post = posts.find(p => p.id === id);
     if (!post) return;
 
-    // Asegurar que exista el arreglo likesList
-    if (!post.likesList) post.likesList = [];
-
-    const userIndex = post.likesList.indexOf(currentUser.id);
+    const likesList = post.likesList || [];
+    const userIndex = likesList.indexOf(currentUser.id);
 
     if (userIndex === -1) {
-        // El usuario no ha dado like: Se agrega
-        post.likesList.push(currentUser.id);
+        likesList.push(currentUser.id);
     } else {
-        // El usuario ya dio like: Se remueve (Toggle)
-        post.likesList.splice(userIndex, 1);
+        likesList.splice(userIndex, 1);
     }
 
-    // Actualizar el contador de likes
-    post.likes = post.likesList.length;
-
-    // Guardar en localStorage y volver a renderizar
-    localStorage.setItem('emprende_posts', JSON.stringify(posts));
-    renderPosts();
+    try {
+        await db.collection('posts').doc(id).update({
+            likesList: likesList,
+            likes: likesList.length
+        });
+    } catch (error) {
+        console.error("Error al actualizar me gusta:", error);
+    }
 }
 
 // Portafolio / Trabajos
@@ -603,48 +663,62 @@ function previewWorkImage(e) {
     reader.readAsDataURL(file);
 }
 
-function addWork(category) {
+async function addWork(category) {
     const workInput = document.getElementById('workInput');
     const text = workInput ? workInput.value.trim() : '';
 
     if (!text && !tempImageBase64) return alert("Añade una descripción o una imagen.");
 
     const item = {
-        id: Date.now(),
         userId: currentUser.id,
         category: category,
         text: text,
-        image: tempImageBase64,
-        date: new Date().toLocaleDateString()
+        image: tempImageBase64 || null,
+        date: new Date().toLocaleDateString(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    portfolioItems.unshift(item);
-    localStorage.setItem('emprende_portfolio', JSON.stringify(portfolioItems));
+    try {
+        await db.collection('portfolio').add(item);
 
-    if (workInput) workInput.value = '';
-    
-    const imgPreview = document.getElementById('workImagePreview');
-    const imgInput = document.getElementById('workImageInput');
-    
-    if (imgPreview) imgPreview.style.display = 'none';
-    if (imgInput) imgInput.value = '';
-    tempImageBase64 = null;
+        if (workInput) workInput.value = '';
+        const imgPreview = document.getElementById('workImagePreview');
+        const imgInput = document.getElementById('workImageInput');
+        if (imgPreview) imgPreview.style.display = 'none';
+        if (imgInput) imgInput.value = '';
+        tempImageBase64 = null;
 
-    renderPortfolio();
+        fetchPortfolio();
+    } catch (error) {
+        alert("Error al añadir trabajo al portafolio: " + error.message);
+    }
+}
+
+function fetchPortfolio() {
+    if (!currentUser) return;
+    db.collection('portfolio')
+        .where('userId', '==', currentUser.id)
+        .onSnapshot((snapshot) => {
+            portfolioItems = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            renderPortfolio();
+        }, (error) => {
+            console.error("Error al obtener portafolio:", error);
+        });
 }
 
 function renderPortfolio() {
     const container = document.getElementById('portfolioContainer');
     if (!container) return;
 
-    const myItems = portfolioItems.filter(i => i.userId === currentUser.id);
-
-    if (myItems.length === 0) {
+    if (portfolioItems.length === 0) {
         container.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 1rem;">Aún no has compartido trabajos realizados ni solicitudes.</p>`;
         return;
     }
 
-    container.innerHTML = myItems.map(item => `
+    container.innerHTML = portfolioItems.map(item => `
         <div class="card portfolio-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                 <span class="post-tag ${item.category === 'trabajo' ? 'tag-trabajo' : 'tag-recomendacion'}">
@@ -653,7 +727,7 @@ function renderPortfolio() {
                 <span style="font-size: 0.75rem; color: var(--text-muted);">${item.date}</span>
             </div>
             ${item.text ? `<p class="post-content" style="font-size: 0.9rem;">${item.text}</p>` : ''}
-            ${item.image ? `<img src="${item.image}" alt="Trabajo">` : ''}
+            ${item.image ? `<img src="${item.image}" alt="Trabajo" style="width:100%; max-height:300px; object-fit:cover; border-radius:8px; margin-top:0.5rem;">` : ''}
         </div>
     `).join('');
 }
@@ -694,7 +768,7 @@ function updateModalStars(stars) {
     });
 }
 
-function submitRating() {
+async function submitRating() {
     if (selectedRatingStars === 0) return alert("Por favor selecciona una cantidad de estrellas.");
 
     const commentEl = document.getElementById('ratingComment');
@@ -708,7 +782,7 @@ function submitRating() {
         date: new Date().toLocaleDateString()
     });
 
-    syncUserData();
+    await syncUserData();
     updateUserUI();
     closeRatingModal();
 }
