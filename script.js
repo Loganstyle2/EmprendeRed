@@ -33,6 +33,10 @@ let portfolioItems = [];
 
 // --- INICIALIZACIÓN AUTOMÁTICA Y ESCUCHADOR DE AUTENTICACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Mantener todo oculto o mostrar un estado de carga sutil al recargar
+    const lobbyView = document.getElementById('lobbyView');
+    if (lobbyView) lobbyView.classList.add('hidden'); // Ocultar lobby por defecto al cargar
+
     // Escuchar cambios de estado en Firebase Auth
     auth.onAuthStateChanged(async (user) => {
         if (user) {
@@ -62,9 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 showApp();
             } catch (error) {
                 console.error("Error al obtener perfil del usuario:", error);
+                showLobby(); // Solo si falla la red mostramos el lobby
             }
         } else {
-            // No hay usuario activo
+            // No hay usuario activo confirmado por Firebase
             currentUser = null;
             localStorage.removeItem('emprende_session');
             showLobby();
