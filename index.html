@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EmprendeRed - Red Social para Emprendedores</title>
+    
+    <!-- Iconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- 0. LOBBY / PANTALLA DE INICIO DE SESIÓN -->
+    <section id="lobbyView" class="lobby-container">
+        <div class="lobby-card">
+            <div class="lobby-logo">
+                <i data-lucide="rocket" size="48"></i>
+                <h1>Emprende<span>Red</span></h1>
+            </div>
+            <h2>Conecta, colabora y haz crecer tu negocio.</h2>
+            <p>La red social diseñada para emprendedores, independientes y creadores de proyectos.</p>
+            
+            <div class="lobby-actions">
+                <button class="btn-primary-lg" onclick="openAuthModal('register')">
+                    Crear una cuenta
+                </button>
+                <div class="lobby-divider"><span>ó</span></div>
+                <button class="btn-secondary-lg" onclick="openAuthModal('login')">
+                    Iniciar Sesión
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Header / Barra Superior -->
+    <header id="mainHeader" class="hidden">
+        <div class="nav-container">
+            <div class="logo" onclick="switchTab('feed')">
+                <i data-lucide="rocket"></i> Emprende<span>Red</span>
+            </div>
+
+            <div class="user-nav-profile" id="userNavMenu">
+                <div class="search-bar">
+                    <i data-lucide="search" size="16"></i>
+                    <input type="text" placeholder="Buscar Socio">
+                </div>
+                <div class="avatar avatar-sm display-avatar" onclick="switchTab('profile')">U</div>
+                <button class="btn-logout" onclick="logout()" title="Cerrar Sesión">
+                    <i data-lucide="log-out" size="18"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <div id="mainApp" class="container hidden">
+
+        <!-- 1. FEED PRINCIPAL -->
+        <main id="feedView" class="feed">
+            <div class="card create-post">
+                <textarea id="postInput" placeholder="¿Tienes una duda, idea o recomendación?"></textarea>
+                
+                <!-- Previsualización de imagen elegida -->
+                <div id="postImagePreviewContainer" class="hidden" style="position: relative; margin-bottom: 0.5rem;">
+                    <img id="postImagePreview" src="" alt="Previsualización" style="max-height: 150px; border-radius: 8px; object-fit: cover;">
+                    <button type="button" onclick="removePostImagePreview()" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">✕</button>
+                </div>
+
+                <div class="post-actions" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                    <!-- Grupo Izquierdo: Select + Botón Foto pegados -->
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <select id="postType" class="select-type">
+                            <option value="Duda">❓ Duda</option>
+                            <option value="Idea">💡 Idea</option>
+                            <option value="Recomendacion">⭐ Recomendación</option>
+                        </select>
+
+                        <!-- Input de archivo oculto -->
+                        <input type="file" id="postImageInput" accept="image/*" class="hidden" onchange="previewPostImage(event)">
+
+                        <!-- Botón visible para seleccionar foto (al lado del select) -->
+                        <button type="button" class="btn-secondary" onclick="document.getElementById('postImageInput').click()" style="display: flex; align-items: center; gap: 0.25rem;">
+                            <i data-lucide="image" size="18"></i> Foto
+                        </button>
+                    </div>
+
+                    <!-- Botón Publicar a la derecha -->
+                    <button class="btn-primary" onclick="addPost()">Publicar</button>
+                </div>
+            </div>
+
+            <div id="postsContainer">
+                <div class="card post">
+                    <div class="post-header">
+                        <div class="avatar" style="width: 40px; height: 40px; font-size: 1rem; margin: 0; background-color: #8b5cf6;">C</div>
+                        <div class="post-user-info">
+                            <h4>Carlos Mendoza</h4>
+                            <span>Comercio Local • Hace 2h</span>
+                        </div>
+                        <span class="post-tag tag-duda">Duda</span>
+                    </div>
+                    <div class="post-content">
+                        ¿Alguien conoce un buen sistema POS para registrar inventario y ventas desde tablet en pequeños negocios?
+                    </div>
+                    <div class="post-footer">
+                        <div class="interaction-btn"><i data-lucide="thumbs-up" size="16"></i> 12</div>
+                        <div class="interaction-btn"><i data-lucide="message-square" size="16"></i> 5</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 2. VISTA DE PERFIL -->
+        <main id="profileView" class="profile-view hidden">
+            
+            <div class="card profile-header-card">
+                <button class="btn-edit profile-edit-top" onclick="toggleEditForm()">
+                    <i data-lucide="edit-3" size="16"></i> Editar Perfil
+                </button>
+
+                <div class="profile-cover"></div>
+                <div class="profile-header-body">
+                    <div class="avatar avatar-large display-avatar">U</div>
+                    
+                    <div class="profile-info-content">
+                        <h2 class="profile-name display-name">Usuario</h2>
+                        <div class="profile-profession display-profession">Profesión</div>
+                        <p class="profile-bio display-bio">Biografía...</p>
+                        
+                    </div>
+
+                    <!-- Formulario de Edición de Perfil -->
+                    <div id="editForm" class="card hidden" style="margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem;">Editar Perfil</h3>
+                        
+                        <div class="form-group">
+                            <label for="editNameInput">Nombre</label>
+                            <input type="text" id="editNameInput" class="form-control" placeholder="Tu nombre completo">
+                        </div>
+
+                        <!-- Campo para la Foto de Perfil -->
+                        <div class="form-group">
+                            <label for="editAvatarInput">Foto de perfil</label>
+                            <input type="file" id="editAvatarInput" class="form-control" accept="image/*" onchange="previewAvatarImage(event)">
+                            <img id="avatarImagePreview" src="" alt="Vista previa" style="display: none; width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-top: 10px;">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editProfessionInput">Licenciatura</label>
+                            <input type="text" id="editProfessionInput" class="form-control" placeholder="Ej. Desarrollador, Barbero, Diseñador">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editTradeInput">Oficio / Especialidad</label>
+                            <input type="text" id="editTradeInput" class="form-control" placeholder="Ej. Corte clásico, Frontend, Servicios generales">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editExperienceInput">Años de Experiencia</label>
+                            <input type="number" id="editExperienceInput" class="form-control" min="0" placeholder="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editLocationInput">Ubicación</label>
+                            <input type="text" id="editLocationInput" class="form-control" placeholder="Ej. Cancún, Q.R.">
+                        </div>                       
+
+                        <div class="form-group">
+                            <label for="editBioInput">Presentación</label>
+                            <textarea id="editBioInput" class="form-control" rows="3" placeholder="Cuéntanos un poco sobre ti y tu trabajo..."></textarea>
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+                            <button class="btn btn-secondary" onclick="toggleEditForm()">Cancelar</button>
+                            <button class="btn btn-primary" onclick="saveProfile()">Guardar Cambios</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Publicar Trabajos y Recomendaciones -->
+            <div class="card portfolio-form">
+                <h3 style="font-size: 1rem; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="briefcase" size="18" color="#2563eb"></i> Publicar Trabajo Realizado o Pedir Recomendación
+                </h3>
+                <textarea id="workInput" placeholder="Describe el trabajo realizado, cliente o solicita recomendaciones a tu comunidad..."></textarea>
+                
+                <img id="workImagePreview" class="image-preview" src="#" alt="Previsualización">
+
+                <div class="portfolio-actions">
+                    <input type="file" id="workImageInput" accept="image/*" style="display: none;" onchange="previewWorkImage(event)">
+                    
+                    <button class="btn-upload" onclick="document.getElementById('workImageInput').click()">
+                        <i data-lucide="image" size="16"></i> Subir Foto de Trabajo
+                    </button>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-secondary" onclick="addWork('solicitud')">
+                            <i data-lucide="star" size="14"></i> Pedir Recomendación
+                        </button>
+                        <button class="btn-primary" onclick="addWork('trabajo')">
+                            Publicar Trabajo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Muro de Trabajos Realizados -->
+            <h3 style="font-size: 1rem; margin: 0.4rem 0 -0.2rem; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="folder-check" size="18"></i> Trabajos Realizados y Reseñas
+            </h3>
+
+            <div id="portfolioContainer" style="display: flex; flex-direction: column; gap: 1rem;"></div>
+
+        </main>
+
+        <!-- Sidebar Derecha -->
+        <aside class="sidebar-right">
+            <!-- Módulo de Publicidad (Visible en Feed) -->
+            <div id="adBlock" class="card adense-container">
+                <span class="ad-label">Publicidad</span>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                     data-ad-slot="1234567890"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+            </div>
+
+            <!-- Módulo de Información del Perfil (Se muestra al estar en la vista de perfil) -->
+            <div id="profileDetailsCard" class="card profile-details-card hidden">
+                <h3 class="details-title">
+                    <i data-lucide="user-check" size="18"></i> Detalles del Perfil
+                </h3>
+                <div class="detail-item">
+                    <span class="detail-label">Licenciatura</span>
+                    <span class="detail-value display-profession-detail">Administración</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Oficio</span>
+                    <span class="detail-value display-trade-detail">No especificado</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Experiencia</span>
+                    <span class="detail-value display-experience-detail">0 años</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Residencia</span>
+                    <span class="detail-value display-location-detail">No especificado</span>
+                </div>
+
+                <!-- LÍNEA SEPARADORA -->
+                <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border);" />
+
+                <!-- SECCIÓN DE REPUTACIÓN / CALIFICACIONES -->
+                <div class="profile-rating-section">
+                    <h4 style="margin-bottom: 0.5rem; font-size: 0.9rem;">Reputación / Calificaciones</h4>
+                    <div class="profile-stars-wrapper" style="display: flex; gap: 0.2rem; align-items: center;">
+                        <i data-lucide="star" class="star-icon" size="18"></i>
+                        <i data-lucide="star" class="star-icon" size="18"></i>
+                        <i data-lucide="star" class="star-icon" size="18"></i>
+                        <i data-lucide="star" class="star-icon" size="18"></i>
+                        <i data-lucide="star" class="star-icon" size="18"></i>
+                        <span class="display-score" style="font-weight: bold; margin-left: 0.5rem;">0.0</span>
+                    </div>
+                    <span class="display-count" style="font-size: 0.8rem; color: var(--text-muted);">Sin calificaciones aún</span>
+
+                    <button onclick="openRatingModal()" class="btn-secondary" style="margin-top: 0.8rem; width: 100%; font-size: 0.85rem;">
+                        <i data-lucide="star" size="14"></i> Calificar Usuario
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- MODAL DE AUTENTICACIÓN (LOGIN / REGISTRO) -->
+    <div id="authModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 id="authTitle" style="font-size: 1.2rem; margin-bottom: 0.8rem;">Iniciar Sesión</h3>
+            <form id="authForm" onsubmit="handleAuthSubmit(event)">
+                <div class="form-group" id="groupName" style="display: none; text-align: left;">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="authName" placeholder="Tu nombre">
+                </div>
+                <div class="form-group" style="text-align: left; margin-top: 0.5rem;">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="authEmail" required placeholder="correo@ejemplo.com">
+                </div>
+                <div class="form-group" style="text-align: left; margin-top: 0.5rem; margin-bottom: 1.2rem;">
+                    <label>Contraseña</label>
+                    <input type="password" id="authPassword" required placeholder="••••••••">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button type="submit" id="authSubmitBtn" class="btn-primary-lg">Ingresar</button>
+                    <button type="button" class="btn-secondary-lg" onclick="closeAuthModal()">Cancelar</button>
+                </div>
+
+                <p id="authSwitchText" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1rem;">
+                    ¿No tienes cuenta? <a href="#" onclick="toggleAuthMode()" style="color: var(--accent); font-weight: 600;">Regístrate aquí</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PARA DEJAR CALIFICACIÓN / RESEÑA -->
+    <div id="ratingModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 style="font-size: 1.1rem; margin-bottom: 0.4rem;">Calificar a este Emprendedor</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Selecciona de 1 a 5 estrellas para registrar tu opinión.</p>
+            
+            <div class="interactive-stars" id="modalStars">
+                <i data-lucide="star" size="26" onclick="setRating(1)"></i>
+                <i data-lucide="star" size="26" onclick="setRating(2)"></i>
+                <i data-lucide="star" size="26" onclick="setRating(3)"></i>
+                <i data-lucide="star" size="26" onclick="setRating(4)"></i>
+                <i data-lucide="star" size="26" onclick="setRating(5)"></i>
+            </div>
+
+            <div class="form-group" style="text-align: left; margin-bottom: 1rem;">
+                <label>Comentario o Recomendación (Opcional)</label>
+                <textarea id="ratingComment" rows="3" placeholder="Ej. Excelente atención y entrega a tiempo..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="btn-upload" onclick="closeRatingModal()">Cancelar</button>
+                <button class="btn-primary" onclick="submitRating()">Enviar Calificación</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación Inferior Móvil -->
+    <nav id="mobileNav" class="mobile-nav hidden">
+        <div id="navHome" class="mobile-nav-item active" onclick="switchTab('feed')">
+            <i data-lucide="home" size="20"></i>
+            <span>Inicio</span>
+        </div>
+        <div id="navProfile" class="mobile-nav-item" onclick="switchTab('profile')">
+            <i data-lucide="user" size="20"></i>
+            <span>Mi Perfil</span>
+        </div>
+    </nav>
+
+    <!-- Script JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
