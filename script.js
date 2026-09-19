@@ -184,6 +184,7 @@ async function handleAuthSubmit(e) {
             // Guardar datos en Firestore
             await db.collection('users').doc(user.uid).set(userData);
             currentUser = userData;
+          updateUserUI();
         } else {
             // Iniciar sesión con Firebase Auth
             const userCredential = await auth.signInWithEmailAndPassword(email, password);
