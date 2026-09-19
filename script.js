@@ -115,12 +115,12 @@ function openAuthModal(mode) {
         if (title) title.innerText = "Crear Cuenta";
         if (groupName) groupName.style.display = "block";
         if (submitBtn) submitBtn.innerText = "Registrarse";
-        if (switchText) switchText.innerHTML = `¿Ya tienes cuenta? <a href="#" onclick="toggleAuthMode()" style="color: var(--accent); font-weight: 600;">Inicia Sesión</a>`;
+        if (switchText) switchText.innerHTML = `¿Ya tienes cuenta? <a href="#" onclick="toggleAuthMode(event)" style="color: var(--accent); font-weight: 600;">Inicia Sesión</a>`;
     } else {
         if (title) title.innerText = "Iniciar Sesión";
         if (groupName) groupName.style.display = "none";
         if (submitBtn) submitBtn.innerText = "Ingresar";
-        if (switchText) switchText.innerHTML = `¿No tienes cuenta? <a href="#" onclick="toggleAuthMode()" style="color: var(--accent); font-weight: 600;">Regístrate aquí</a>`;
+        if (switchText) switchText.innerHTML = `¿No tienes cuenta? <a href="#" onclick="toggleAuthMode(event)" style="color: var(--accent); font-weight: 600;">Regístrate aquí</a>`;
     }
 
     modal.classList.remove('hidden');
@@ -133,7 +133,8 @@ function closeAuthModal() {
     if (form) form.reset();
 }
 
-function toggleAuthMode() {
+function toggleAuthMode(e) {
+    if (e && e.preventDefault) e.preventDefault();
     openAuthModal(isAuthRegisterMode ? 'login' : 'register');
 }
 
