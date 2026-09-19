@@ -81,7 +81,7 @@
                         <!-- Input de archivo oculto -->
                         <input type="file" id="postImageInput" accept="image/*" class="hidden" onchange="previewPostImage(event)">
 
-                        <!-- Botón visible para seleccionar foto (al lado del select) -->
+                        <!-- Botón visible para seleccionar foto -->
                         <button type="button" class="btn-secondary" onclick="document.getElementById('postImageInput').click()" style="display: flex; align-items: center; gap: 0.25rem;">
                             <i data-lucide="image" size="18"></i> Foto
                         </button>
@@ -129,7 +129,6 @@
                         <h2 class="profile-name display-name">Usuario</h2>
                         <div class="profile-profession display-profession">Profesión</div>
                         <p class="profile-bio display-bio">Biografía...</p>
-                        
                     </div>
 
                     <!-- Formulario de Edición de Perfil -->
@@ -141,7 +140,7 @@
                             <input type="text" id="editNameInput" class="form-control" placeholder="Tu nombre completo">
                         </div>
 
-                        <!-- Campo para la Foto de Perfil -->
+                        <!-- Campo para Foto de Perfil -->
                         <div class="form-group">
                             <label for="editAvatarInput">Foto de perfil</label>
                             <input type="file" id="editAvatarInput" class="form-control" accept="image/*" onchange="previewAvatarImage(event)">
@@ -149,7 +148,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="editProfessionInput">Licenciatura</label>
+                            <label for="editProfessionInput">Licenciatura / Profesión</label>
                             <input type="text" id="editProfessionInput" class="form-control" placeholder="Ej. Desarrollador, Barbero, Diseñador">
                         </div>
 
@@ -165,8 +164,8 @@
 
                         <div class="form-group">
                             <label for="editLocationInput">Ubicación</label>
-                            <input type="text" id="editLocationInput" class="form-control" placeholder="Ej. Cancún, Q.R.">
-                        </div>                      
+                            <input type="text" id="editLocationInput" class="form-control" placeholder="Ej. Playa del Carmen, Q.R.">
+                        </div>                     
 
                         <div class="form-group">
                             <label for="editBioInput">Presentación</label>
@@ -174,8 +173,8 @@
                         </div>
 
                         <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
-                            <button class="btn btn-secondary" onclick="toggleEditForm()">Cancelar</button>
-                            <button class="btn btn-primary" onclick="saveProfile()">Guardar Cambios</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleEditForm()">Cancelar</button>
+                            <button type="button" class="btn btn-primary" onclick="saveProfile()">Guardar Cambios</button>
                         </div>
                     </div>
                 </div>
@@ -188,7 +187,7 @@
                 </h3>
                 <textarea id="workInput" placeholder="Describe el trabajo realizado, cliente o solicita recomendaciones a tu comunidad..."></textarea>
                 
-                <img id="workImagePreview" class="image-preview" src="#" alt="Previsualización">
+                <img id="workImagePreview" class="image-preview" src="#" alt="Previsualización" style="display: none;">
 
                 <div class="portfolio-actions">
                     <input type="file" id="workImageInput" accept="image/*" style="display: none;" onchange="previewWorkImage(event)">
@@ -230,7 +229,7 @@
                      data-full-width-responsive="true"></ins>
             </div>
 
-            <!-- Módulo de Información del Perfil (Se muestra al estar en la vista de perfil) -->
+            <!-- Módulo de Información del Perfil -->
             <div id="profileDetailsCard" class="card profile-details-card hidden">
                 <h3 class="details-title">
                     <i data-lucide="user-check" size="18"></i> Detalles del Perfil
@@ -252,7 +251,6 @@
                     <span class="detail-value display-location-detail">No especificado</span>
                 </div>
 
-                <!-- LÍNEA SEPARADORA -->
                 <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border);" />
 
                 <!-- SECCIÓN DE REPUTACIÓN / CALIFICACIONES -->
@@ -283,15 +281,15 @@
             <h3 id="authTitle" style="font-size: 1.2rem; margin-bottom: 0.8rem;">Iniciar Sesión</h3>
             <form id="authForm" onsubmit="handleAuthSubmit(event)">
                 <div class="form-group" id="groupName" style="display: none; text-align: left;">
-                    <label>Nombre Completo</label>
+                    <label for="authName">Nombre Completo</label>
                     <input type="text" id="authName" placeholder="Tu nombre">
                 </div>
                 <div class="form-group" style="text-align: left; margin-top: 0.5rem;">
-                    <label>Correo Electrónico</label>
+                    <label for="authEmail">Correo Electrónico</label>
                     <input type="email" id="authEmail" required placeholder="correo@ejemplo.com">
                 </div>
                 <div class="form-group" style="text-align: left; margin-top: 0.5rem; margin-bottom: 1.2rem;">
-                    <label>Contraseña</label>
+                    <label for="authPassword">Contraseña</label>
                     <input type="password" id="authPassword" required placeholder="••••••••">
                 </div>
 
@@ -301,7 +299,7 @@
                 </div>
 
                 <p id="authSwitchText" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1rem;">
-                    ¿No tienes cuenta? <a href="#" onclick="toggleAuthMode()" style="color: var(--accent); font-weight: 600;">Regístrate aquí</a>
+                    ¿No tienes cuenta? <a href="#" onclick="toggleAuthMode(event)" style="color: var(--accent); font-weight: 600;">Regístrate aquí</a>
                 </p>
             </form>
         </div>
@@ -313,22 +311,22 @@
             <h3 style="font-size: 1.1rem; margin-bottom: 0.4rem;">Calificar a este Emprendedor</h3>
             <p style="font-size: 0.85rem; color: var(--text-muted);">Selecciona de 1 a 5 estrellas para registrar tu opinión.</p>
             
-            <div class="interactive-stars" id="modalStars">
-                <i data-lucide="star" size="26" onclick="setRating(1)"></i>
-                <i data-lucide="star" size="26" onclick="setRating(2)"></i>
-                <i data-lucide="star" size="26" onclick="setRating(3)"></i>
-                <i data-lucide="star" size="26" onclick="setRating(4)"></i>
-                <i data-lucide="star" size="26" onclick="setRating(5)"></i>
+            <div class="interactive-stars" id="modalStars" style="margin: 1rem 0;">
+                <i data-lucide="star" size="26" onclick="setRating(1)" style="cursor: pointer;"></i>
+                <i data-lucide="star" size="26" onclick="setRating(2)" style="cursor: pointer;"></i>
+                <i data-lucide="star" size="26" onclick="setRating(3)" style="cursor: pointer;"></i>
+                <i data-lucide="star" size="26" onclick="setRating(4)" style="cursor: pointer;"></i>
+                <i data-lucide="star" size="26" onclick="setRating(5)" style="cursor: pointer;"></i>
             </div>
 
             <div class="form-group" style="text-align: left; margin-bottom: 1rem;">
-                <label>Comentario o Recomendación (Opcional)</label>
+                <label for="ratingComment">Comentario o Recomendación (Opcional)</label>
                 <textarea id="ratingComment" rows="3" placeholder="Ej. Excelente atención y entrega a tiempo..."></textarea>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button class="btn-upload" onclick="closeRatingModal()">Cancelar</button>
-                <button class="btn-primary" onclick="submitRating()">Enviar Calificación</button>
+                <button type="button" class="btn-upload" onclick="closeRatingModal()">Cancelar</button>
+                <button type="button" class="btn-primary" onclick="submitRating()">Enviar Calificación</button>
             </div>
         </div>
     </div>
@@ -345,12 +343,21 @@
         </div>
     </nav>
 
-    <!-- Librerías de Firebase CDN -->
+    <!-- SDKs de Firebase (Sintaxis v8/Compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <!-- Script JavaScript Principal -->
-    <script src="script.js"></script>
+    <!-- Script Principal JS -->
+    <script src="app.js"></script>
+
+    <!-- Inicialización de íconos Lucide -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
 </body>
 </html>
